@@ -563,10 +563,9 @@ things to know
 * New
 ???
 They say it's production ready but it's still an unproven service.
-
 --
-* Very easy and fun to work with!
 
+* Very easy and fun to work with!
 
 ---
 
@@ -610,6 +609,12 @@ class: title
 * **Decoupled from datasource**
 --
 
+* Relations
+???
+* Create connections between models
+* Typical hasOne, hasMany, belongsTo etc.
+--
+
 * Datasources
 ???
 * Datasource backs a model
@@ -618,12 +623,183 @@ class: title
 * One model doesn't know or care what another model's datasource is
 --
 
+* Model Discovery
+???
+Generate models from database schemas
+--
+
 * "Declarative APIs"
 ???
 * Don't write routes, just describe what your data looks like, who can access it etc.
 * Framework writes routes for you
 
+**END LOOPBACK**
+
 ---
+class: title
+
+# Authentication, Sessions, and Tokens
+
+--
+
+## Authentication
+
+* Who are you?
+* Can you prove it?
+
+--
+
+## Sessions/Tokens
+
+* Keeping a user authenticated
+
+---
+
+# Session/Token Strategies
+
+???
+Depends on the type of access needed
+
+--
+
+* Browser?
+--
+<br>&rarr; Cookies+Sessions
+???
+* A "session" is a record on the server/database that bearer of a certain token is authenticated as a certain user
+* Cookies are built in to browsers
+* Strong security when used properly
+* Stateful, invalidatable
+--
+
+* Programatic API Calls?
+--
+<br>&rarr; API Keys
+???
+* Invalidatable: (2 part key you can cancel the part the server has)
+* Developer downloads a token "API Secret" and stores is somewhere secure
+* ssh keys are a version of this
+--
+
+* Communicating Verifiable Claims?
+--
+<br>&rarr;JSON Web Tokens
+???
+* Set of claims, roles, permissions, user ids, etc.
+* Services share a secret to sign the claims & verify them elsewhere
+* Useful for short-term API call permissions
+* "Server X said I have permissions for Y, here's my proof"
+* **NOT INVALIDATABLE** | **NOT A REPLACEMENT FOR SESSIONS**
+* "I can get around x-domain cookie sharing by storing these in localstorage!" &larr; NO!
+* You can shoot yourself in the foot trying to circumvent browser security features
+
+---
+
+# Cookies + Sessions Challenges
+
+--
+
+* Sharing cookies across domains
+???
+* Browsers will only send cookies to the domain that set them
+* Subdomains can share cookies
+* Putting all services under one domain solves this issue
+--
+
+* Sharing sessions across instances
+???
+* Every service that wants to verify & look up session info for a cookie must have access to same session store
+* Alternately, services can share a session secret and info can be serialized in the cookie itself
+--
+
+* Limited cookie size
+???
+* 4096 bytes
+* Store info in session, just put an identifier on the cookie itself
+
+**NOW AUTH EXERCISE**
+
+---
+
+class: title
+# Infrastructure as Code
+
+"Declarative Infrastructure"
+
+--
+
+* Encode infrastructure requirements in a configuration file
+???
+* For cloud providers
+* Define what your app/service needs: disk storage, a database, an HTTP gateway, etc.
+--
+
+* Track infra requirements with code
+--
+
+* Deploy infrastructure with a command
+--
+
+* Tear down with a command
+--
+
+* Does *not* handle application code/configuration
+???
+* other tools such as ansible etc. deal with this (configuration management)
+* Fits into "cloud provider" model, not "container" model
+
+---
+
+# Terraform
+
+* Multiple platforms (AWS, Google Cloud, Cloudflare, Digital Ocean, many more)
+* Goes beyond hosting: loggers, github, message queues etc.
+
+--
+
+# CloudFormation
+
+* Specific to AWS
+* Tailored towards AWS services
+
+---
+
+class: title
+# Serverless
+
+--
+
+* Mix of infra management & configuration management
+--
+
+* Specifically for cloud functions
+--
+
+* Sets up triggers, e.g. HTTP gateways as well
+--
+
+* Multiple platforms
+--
+
+---
+
+# What is Serverless?
+
+--
+
+* Breaks applications into functions
+--
+
+* Deploys them separately but under one API Gateway
+--
+
+* Allows versioning and rollback
+--
+
+* Run functions locally
+--
+
+* Wire together all necessary resources, permissions, etc.
 
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js" type="text/javascript">
