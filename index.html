@@ -24,1847 +24,614 @@
     <textarea id="source">
 
 class: title
-# Debugging Node.js
+# Practical Microservices
 
-![Great Indian Developer Summit](img/GIDSLogo.jpg)
+## Tools & Techniques
 
---
-
-## Sequoia McDowell
+### Sequoia McDowell
 
 .small-list[
-* 🌐  http://sequoia.makes.software
+* 🌐  https://sequoia.makes.software
 * 🦆  @_sequoia
 * 📧  sequoia.mcdowell@gmail.com
 ]
 
+???
+
+#### Welcome!
+
+* Practical microservices tools & techniques
+
+---
+
+# Goals of this Training
 
 ???
 
-## Welcoming to debugging Node.js!
+By the end of this training you should have...
+--
 
-* I'm Sequoia, find me online at x, y, z
-* I've been writing Node.js since v0.3
-* Come a long way since then
-* Worked in Java for a bit
-  * Code hinting
-  * Step thru debugging
-  * Robust logging
-  * *Missed this when I returned to node*
+* Core Microservices Concepts
+???
+#### Introduce core concepts of microservices:
+* What they are
+* When to use them
+* Different architectures
+* Pros & Cons & Pitfalls
+--
 
-&rarr; Going to talk about how to do this stuff in node.js
+* Familiarity with Providers & Tools
+???
+#### Providers and tools
+* Platforms: AWS, Now.sh, Google Cloud, Bluemix Etc.
+* Tools: API building tools, deployment tools, infra management & scaling
+--
+
+* **Hands on Experience**
+???
+#### Hands on
+* The bulk of time will be spent on exercises
+* Most exercises follow a narrative: decomposing our ebooks store into microservices!
 
 ---
-class: biglist
 
-# Agenda
+# Components of This Training
+
+1.  Lecture
+2.  Exercises
+
+???
+
+#### Lecture
+
+I'll explain some concepts as we go, but as much as possible we'll focus on hands-on exercises
+
+#### Exercises
+
+Exercises can be found in the following repository...
 
 --
 
-* General Debugging Tips
---
+## Code
 
-* Logging
-???
-----
-* enabling & disabling logs
-* writing to other log systems
---
-
-* Step-Through Debugging
-???
-----
-* step through debugging
-* Breakpoints
---
-
-* Advanced Debugging
-???
-----
-* CPU analysis
-* Tracking timing from browser
-* heap dump analysis
-
----
-
-# Debugging Tips
-
-1. Throw `Error` Objects
-2. Name Functions
-3. Use Assert
-
----
-
-## ℹ️ Throw `Error` Objects
+<https://github.com/Sequoia/microservices-code-along/>
 
 --
 
-### ❌
+## Notes
 
-```js
-try{
-  throw "something went wrong!";
-}catch(e){
-  console.error(e.stack); // undefined!! :(
-}
-```
+<http://bit.ly/msv-notes>
 
 ???
-* no stack
 
-"A JavaScript **exception** is a **value that is thrown** as a result of an invalid operation or as the target of a throw statement. While it is not required that these values are instances of Error or classes which inherit from Error, **all exceptions thrown by Node.js or the JavaScript runtime will be instances of Error**."
-
---
-
-### ✅
-
-```js
-try{
-  throw new Error('something went wrong!');
-}catch(e){
-  console.error(e.stack); 
-}                         
-// Error: something went wrong!
-//     at Object.<anonymous> (/Users/sequoia/tmp/test-app/app.js:16:11)
-//     at Module._compile (module.js:541:32)
-//     ...
-```
-
-???
-* With stack trace!
+* Google doc I'll update as needed with links etc.
+* *Demo stepping through code & Show on github*
 
 ---
 
-## ℹ️ Name Functions
+# Who Am I
 
-### ❌ Anonymous Functions
-```js
-db.connect(config, function(connection){ /*...*/})
-connection.findAll(function(results){ /*...*/})
-fs.read(filename, function(err, results){ /*...*/})
-```
+???
+
+* My name; Go around and introduce ourselves in a moment
+
+#### Background
+
+* Web person to Programmer
+* Doing javascript for years, mostly backend these days
+* Marketing, Software company, PHP, Java, JavaScript
+* Contracting and educating past two years, seen lots of tools & platforms
+* Educating is my passion so I have to keep up w/rapidly changing field
+* Dabbling in microservices lately & put together this training to share some of what I've learned
 
 --
 
-### ❌ Anonymous Functions
-```no-highlight
-Uncaught TypeError: Cannot read property 'name' of undefined
-  getUser              @ foo.js:2
-  (anonymous function) @ bar.js:71
-  (anonymous function) @ bar.js:202
-  (anonymous function) @ baz.js:11
-  ...
-```
-
----
-
-## ℹ️ Name Functions
-
-### ✅ Named Functions
-```js
-db.connect(config, function dbReady(connection){ /*...*/})
-Users.findAll(function handleResults(results){ /*...*/})
-fs.read(filename, function processFiles(err, results){ /*...*/})
-```
+# Who are you
 
 --
 
-### ✅ Named Functions
-```no-highlight
-Uncaught Error:
-  getUser              @ foo.js:2
-  getItem              @ bar.js:71
-  buildDBQuery         @ bar.js:202
-  createDatabase       @ baz.js:11
-  ...
-```
- <!-- .element: class="fragment" -->
-
-
----
-
-## ℹ️  Use `assert`
-
-### ❌
-
-```js
-if(!cfg.host){
-  throw new Error('host must be set');
-}
-if(typeof cfg.port !== 'number'){
-  throw new Error('port must be a number');
-}
-```
-
---
-### ✅
-
-```js
-const assert = require('assert');
-
-assert(cfg.host, 'host must be set');
-assert.equal(typeof cfg.port, 'number'), 'port must be a number');
-```
+* Name, Role
+* Experience with Microservices and Node
+* What brought you here today?
 
 ???
 
-* Like asserts in java!
-* Makes error with stack trace + optional message
+#### Introductions
 
----
-
-# Console Logging
-
-```js
-console.log('looking up user {id: %s}', id);
-db.Users.find({id: id}, function(e, user){
-  console.log('found user %s: %s', user.id, user.name);
-})
-```
-```js
-app.get('/posts/:id', function showPost(req, res){
-  console.log('post %s requested', req.params.id);
-})
-app.get('/users/:id', function showUser(req, res){
-  console.log('user %s requested', req.params.id);
-})
-```
-```js
-db.on('query', function(query){
-  console.log('querying database: %s', query.query);
-})
-```
+* Name, Background w/msv & node, what do you hope to get from training
 
 ???
 
-While you're working you add console statements like this
+---
+
+# Agenda: Day 1
+
+* Introduction
+* Microservice Concepts
+* Now.sh
+* LoopBack & Bluemix
+* Handling Sessions
+* Cloud Functions & AWS Lambda
+* Infrastructure as Code
 
 ---
 
-# Console Logging
+# Agenda: Day 2
 
-```js
-//...
-db.Users.find({id: id}, function(e, user){
-  //...
-})
-```
-```js
-app.get('/posts/:id', function handleIndex(req, res){
-  //...
-})
-app.get('/users/:id', function handleIndex(req, res){
-  //...
-})
-```
-```js
-db.on('query', function(query){
-  //...
-})
-```
+* The "Serverless" Framework
+* Using JSON Web Tokens
+* Containers & Docker
+* Docker Compose
+* Proxying with Nginx
+* Kubernetes
+* Deploying to Google Cloud
 
 ???
-Then you stop working on that stuff so you delete your console.log statements
+
+* A lot to go over!!
+* Let's jump in with an introduction to microservices
 
 ---
 
-# Console Logging
+class:title
 
-```js
-//console.log('looking up user {id: %s}', id);
-db.Users.find({id: id}, function(e, user){
-  //console.log('found user %s: %s', user.id, user.name);
-})
-```
-```js
-app.get('/posts/:id', function handleIndex(req, res){
-  //console.log('post %s requested', req.params.id);
-})
-app.get('/users/:id', function handleIndex(req, res){
-  //console.log('user %s requested', req.params.id);
-})
-```
-```js
-db.on('query', function(query){
-  //console.log('querying database: %s', query.query);
-})
-```
+# Microservices
 
 --
 
-*"There's got to be a better way!"*
+* What is a microservice?
+--
+
+* What *isn't* a microservice?
+
+--
+* What problem do they solve?
+
+--
+* ...Docker?
 
 ???
-But later you need them, so you add them back
+Let's step back and look at where microservices came from...
 
-this time you just **comment them out**
-
-&rarr; There's got to be a better way!
+What's not a microservice? Monolith
 
 ---
 
-# The `debug` module
+# Architectures: Monolith
 
-```no-highlight
-$ npm install --save debug
-```
+--
+* One application
+
+???
+Code lives in one repository or is assembled into one artifact
+--
+* One application server (usually)
+
+???
+* In the simplest case.
+* There might be a separate database server or filesystem
+* (Possibly multiple instances with a load balancer or shared session store but **conceptually it all runs as one unit**)
+--
+* **One "unit"**
+???
+All aspects of the application, authentication, webpage rendering, database connection, HTTP request handling, run as one unit.
+
+---
+
+# Monolith: Advantages
+--
+
+* Easy to write features
+???
+* With all code in the same place, it's very simple to get started, very little overhead.
+* Less organizing different repositories, less assembling things together etc.
+--
+
+* Simple to deploy (maybe)
+???
+* Stand up a server (LAMP e.g.), run mysql, ftp code to it
+* If you need a tool or library, install it on that box
+* (often fragile, but we'll get to that later)
+--
+
+* Simpler authentication models
+???
+* Sessions can be managed in memory or on local FS
+* Data and/or auth DBs can be connected to locally
+--
+
+* Fewer things that can fail
+???
+* Logs exist on one server, with one application it's easy to know where to start looking for problems
+
+---
+
+# Monolith: Disadvantages
+--
+
+* Scaling can be a challenge
+???
+* Can't scale cpu intensive process without scaling whole server
+* Another server = another full stack
+--
+
+* Easy to make a mess
+???
+* Missing a library or dep? Install on the server!
+* Without delineating boundaries between entities (products, orders & users), a query in a products controller can span your whole database. This can cause a mess where it's impossible to edit the database or remove a function becuase someone somewhere relies on it
+--
+
+* Difficult to use multiple languages
+???
+* If you have a java app + web server, you're not likely to integrate node.js or python into it even if those are a better choice for a particular feature or you have devs that know that language
+--
+
+* Difficult to update/replatform
+???
+* Eventually your application stack will become defunct. If it's all in one big app you spent 10 years writing with 50 people, a rewrite can be a nonstarter.
+* With smaller services with clearly defined API contracts, you can rewrite parts of your application without changing the others & gradually update
+
+---
+
+# Architecture: Microservices
 
 --
 
-```js
-const debug = require('debug');
-const log = debug('my-app');
-```
+* Many smaller applications
+???
+* One application per business area/entity (or something else!)
+* Web server, products API, asset management service
+* Tied together (somehow)
+--
 
-```js
-log('test');
+* Services run in isolation
+???
+* Commonly, a service runs in its own container
+--
 
-setTimeout(function(){
-  log('user: %j', { id: 12, name: 'Naomi' });
-}, 500)
-```
+* Federated data stores
+???
+* Two different services typically *do not* share a database
+--
+
+* Services reveal limited API interfaces
+???
+* HTTP, message queuing, or something else
+* Products service doesn't allow another service to query database directly
+--
+
+* Stateless (typically)
+???
+* Instance does not rely on local FS (for assets) or local database
+* Necessary for scaling
+
+---
+
+# Microservices: Advantages
 
 --
 
-----
+* Easier to organize code (within a repository)
+???
+* Auth service *only handles auth*
+* Easier to work with a codebase that does one thing
+* Code should not swell to 5k files and if it does you can split
+* One team fully in charge of a service, less collisions
+--
 
-<pre class="ansi2html">
-bash-3.2$ node script.js
-</pre>
+* Easier to replatform
+???
+* Smaller code bases, clear contracts
+* rewrite Inventory service in another framework or lang, as long as it implements the same APIs
+--
+
+* Easier to scale
+???
+* Scale one service, not the other
+* Lack of state & containerization makes it easy to spin up or down instances 
+--
+
+* Allows for multiple languages in an application
+???
+* Data team uses python, web team uses node, communicate via APIs
+--
+
+* More clearly defined
+???
+* If one service does one thing with dependencies X, Y, Z per container config, it's hard to miss a dependency
+* If API contracts are clear, it's less likely to break someone elses code
+---
+
+# Microservices: Disadvantages
 
 --
 
-----
-
-<pre class="ansi2html">
-bash-3.2$ <span class="b4">DEBUG=*</span> node script.js
+* More things that can break
+???
+* Application error log vs. 20 error logs across 20 servers
+* Oh and the automated deployment itself can break!
 --
 
-  <span class="f3"><span class="bold">my-app </span></span>test <span class="f3">+0ms</span>
-  <span class="f3"><span class="bold">my-app </span></span>user: {&quot;id&quot;:12,&quot;name&quot;:&quot;Naomi&quot;} <span class="f3">+503ms</span>
-</pre>
-
+* More tooling
 ???
+* "Deploy 10 services with the push of a button" but how many weeks did it take you to configure that button?
+--
 
-one of the first things I install on a new project
+* More challenging to organize code *across* repositories
+???
+--
 
-**Note the environmental variable**
+* More **Complexity**
+???
+* **Poll**: What's more complex: large system with 100 features or 10 systems with 10 features each?
+* Each service is simple but the contracts in between, encoding infra etc. all comes at a cost
 
 ---
 
-## Using `debug`
-
-```js
-log('looking up user {id: %s}', id);
-db.Users.find({id: id}, function(e, user){
-  log('found user %s: %s', user.id, user.name);
-})
-```
-```js
-app.get('/posts/:id', function handleIndex(req, res){
-  log('post %s requested', req.params.id);
-})
-//...
-```
---
-
-<pre class="ansi2html">
-bash-3.2$ <span class="b4">DEBUG=my-app</span> node script.js
---
-
-  <span class="f3"><span class="bold">my-app </span></span>looking up user {id: 123} <span class="f3">+96ms</span>
-  <span class="f3"><span class="bold">my-app </span></span>querying database: SELECT * FROM `Users` WHERE `User.id`=123 <span class="f3">+6ms</span>
-  <span class="f3"><span class="bold">my-app </span></span>found user 123: Naomi <span class="f3">+108ms</span>
-  <span class="f3"><span class="bold">my-app </span></span>post best-frameworks-2017 requested <span class="f3">+43ms</span>
-  <span class="f3"><span class="bold">my-app </span></span>querying database: SELECT * FROM `Posts` WHERE `Post.slug`=&quot;best-frameworks-2017&quot;;<span class="f3">+22ms
-</span>
-  <span class="f3"><span class="bold">my-app </span></span>user: {&quot;id&quot;:12,&quot;name&quot;:&quot;Naomi&quot;} <span class="f3">+225ms</span>
-</pre>
-
-???
-
-* Note timings: time since **last call**
-  * `108ms` is time between logging "querying db" and getting result
-* Whole application verbose-mode
-* We can do better!
-* &rarr; **Per-section** debugging
+![We replaced our monolith with micro services so that every outage could be more like a murder mystery.](img/murder.png)
+*https://twitter.com/honest_update/status/651897353889259520*
 
 ---
 
-```js
-const dbLog = debug('my-app:database');
-const routeLog = debug('my-app:routes');
-const userLog = debug('my-app:users');
-```
---
-```js
-db.Users.find({id: id}, function(e, user){
-*  userLog('found user %s: %s', user.id, user.name);
-})
-app.get('/posts/:id', function handleIndex(req, res){
-*  routeLog('post %s requested', req.params.id);
-})
-db.on('query', function(query){
-*  dbLog('querying database: %s', query.query);
-})
-```
+# Getting Started Considerations
 
---
-
-<pre class="ansi2html">
-bash-3.2$ <span class="b4">DEBUG=my-app:*</span> node script.js          
---
-
-  <span class="f3"><span class="bold">my-app:routes </span></span>user 123 requested <span class="f3">+0ms</span>
-  <span class="f6"><span class="bold">my-app:users </span></span>looking up user {id: 123} <span class="f6">+97ms</span>
-  <span class="f2"><span class="bold">my-app:database </span></span>querying database: SELECT * FROM `Users` WHERE `User.id`=123 <span class="f2">+7ms</span>
-  <span class="f6"><span class="bold">my-app:users </span></span>found user 123: Naomi <span class="f6">+109ms</span>
-  <span class="f3"><span class="bold">my-app:routes </span></span>post best-frameworks-2017 requested <span class="f3">+43ms</span>
-  <span class="f2"><span class="bold">my-app:database </span></span>querying database: SELECT * FROM `Posts` WHERE `Post.slug`=&quot;best-frameworks-2017&quot;; <span class="f2">+18ms</span>
-</pre>
-
+* Start with a monolith
 ???
-What if you're only debugging the Database?
+* Don't start with microservices
+* Monoliths are much easier to get up and running and to iterate on initially.
+* Starting with a msv arch will add unnecessary overhead for young projects
+* Build, iterate, learn what you need & decompose later
+--
+
+* Start with just one microservice
+???
+* Don't attempt to break everything up all at once
+* Move slowly, decompose bit by bit
+--
+
+* Ensure MSV arch is worth the cost
+???
+* There *is* a cost associated: expertise & configuration
+* "Is there a cheaper/easier way?"
+--
+
+* "You're not google"
+???
+* A lot of tools are built to solve problems that 95% of us never encounter
+--
+
+* Everything's a tradeoff
+???
+* applies everywhere
+* No silver bullets
+
+*Let's look at some patterns/archs for msvs*
 
 ---
 
-### Just Database Logger
+# MSV Architectures: Cloud Providers
 
-<pre class="ansi2html">
-bash-3.2$ DEBUG=<span class="b4">my-app:database</span> node script.js          
-  <span class="f2"><span class="bold">my-app:database </span></span>querying database: SELECT * FROM `Users` WHERE `User.id`=123 <span class="f2">+7ms</span>
-  <span class="f2"><span class="bold">my-app:database </span></span>querying database: SELECT * FROM `Posts` WHERE `Post.slug`=&quot;best-frameworks-2017&quot;; <span class="f2">+18ms</span>
-</pre>
+* AWS (Amazon)
+* Google Cloud
+* Azure (Microsoft)
+* Bluemix (IBM)
+
+???
+
+* Provide solutions for everything
+* Write code (or configure screens) for *that* provider
+* API gateways, databases, file storage, etc.
+* Tight interoperation
+* High lockin
+* *Can* Be intermixed
+
+---
+
+# MSV Architectures: Cloud Functions
+
+* AWS Lambda
+* Azure Functions
+* IBM OpenWhisk
+* Google Cloud Functions
+
+---
+
+# MSV Architectures: Cloud Functions
+
+???
+
+* HTTP request, SNS, object added to bucket, run on schedule
+* not specifically for HTTP
+* Some composible, notably OpenWhisk which is build for composing pipelines
+* Limited in functionality: can't stream files from a lambda e.g.
 
 --
 
-### Users + Routes
+* Respond to "triggers"
+--
 
-<pre class="ansi2html">
-bash-3.2$ DEBUG=<span class="b4">my-app:users,my-app:routes</span> node script.js          
-  <span class="f3"><span class="bold">my-app:routes </span></span>user 123 requested <span class="f3">+0ms</span>
-  <span class="f6"><span class="bold">my-app:users </span></span>looking up user {id: 123} <span class="f6">+97ms</span>
-  <span class="f6"><span class="bold">my-app:users </span></span>found user 123: Naomi <span class="f6">+109ms</span>
-  <span class="f3"><span class="bold">my-app:routes </span></span>post best-frameworks-2017 requested <span class="f3">+43ms</span>
-</pre>
+* Turn on, run operation, turn off
+--
+
+* "Scale" automatically
+--
+
+* Pay for what you use
+--
+
+* Stateless
+
+---
+
+# MSV Architectures: Containers
 
 ???
-
-Comma separated
+* very distinct from cloud providers like using the AWS stack
+* Use your own stack & deploy it as a single unit containing all executables & portions of filesystem you need
 
 --
 
-### Everything *but* database
-
-<pre class="ansi2html">
-bash-3.2$ DEBUG=my-app:*,<span class="b4">-my-app:database</span> node script.js          
-  <span class="f3"><span class="bold">my-app:routes </span></span>user 123 requested <span class="f3">+0ms</span>
-  <span class="f6"><span class="bold">my-app:users </span></span>looking up user {id: 123} <span class="f6">+97ms</span>
-  <span class="f6"><span class="bold">my-app:users </span></span>found user 123: Naomi <span class="f6">+109ms</span>
-  <span class="f3"><span class="bold">my-app:routes </span></span>post best-frameworks-2017 requested <span class="f3">+43ms</span>
-</pre>
-
-???
-
-Minus to omit
-
----
-
-## `debug` is widely used
-<pre class="ansi2html">
-bash-3.2$ <span class="b4">DEBUG=*</span> node script.js          
+* Not "required", but typically used
 --
 
-  <span class="f6"><span class="bold">express:application </span></span>set &quot;x-powered-by&quot; to <span class="f3">true<span class="f9"><span class="f6"> +0ms</span></span></span>
-  <span class="f6"><span class="bold">express:application </span></span>set &quot;etag&quot; to <span class="f2">'weak'<span class="f9"><span class="f6"> +3ms</span></span></span>
+* Describe the infrastructure your code needs
+--
 
-  <span class="f2"><span class="bold">express:router </span></span>use / query<span class="f2"> +1ms</span>
-  <span class="f3"><span class="bold">express:router:layer </span></span>new /<span class="f3"> +1ms</span>
-  <span class="f2"><span class="bold">express:router </span></span>use / expressInit<span class="f2"> +0ms</span>
-  <span class="f3"><span class="bold">express:router:layer </span></span>new /<span class="f3"> +1ms</span>
+* Reproduce identical execution environments
+--
 
-  <span class="f4"><span class="bold">express:router:route </span></span>new /<span class="f4"> +0ms</span>
-  <span class="f3"><span class="bold">express:router:layer </span></span>new /<span class="f3"> +1ms</span>
-  <span class="f4"><span class="bold">express:router:route </span></span>get /<span class="f4"> +0ms</span>
-  <span class="f3"><span class="bold">express:router:layer </span></span>new /<span class="f3"> +0ms</span>
-
-  <span class="f5"><span class="bold">app:info </span></span>listening on 3030<span class="f5"> +7ms</span>
-  <span class="f2"><span class="bold">express:router </span></span>dispatching GET /restaurants/1<span class="f2"> +4s</span>
-  <span class="f1"><span class="bold">sqlLib:query </span></span>Executing (default): SELECT `Restaurant`.`id`, `Restaurant`.`name`, `Restaurant`.`founded`, `Restaurant`.`createdAt`, `Restaurant`.`updatedAt`, `Dishes`.`id` AS `Dishes.id`, `Dishes`.`name` AS `Dishes.name`, `Dishes`.`spicy` AS `Dishes.spicy`, `Dishes`.`createdAt` AS `Dishes.createdAt`, `Dishes`.`updatedAt` AS `Dishes.updatedAt`, `Dishes`.`RestaurantId` AS `Dishes.RestaurantId` FROM `Restaurants` AS `Restaurant` LEFT OUTER JOIN `Dishes` AS `Dishes` ON `Restaurant`.`id` = `Dishes`.`RestaurantId` WHERE `Restaurant`.`id` = '1';<span class="f1"> +4s</span>
-  <span class="f5"><span class="bold">app:info </span></span>Restaurant Found: "Giotto's"<span class="f5"> +2ms</span>
-  <span class="f6"><span class="bold">express:view </span></span>lookup &quot;restaurant_detail.jade&quot;<span class="f6"> +198ms</span>
-  <span class="f6"><span class="bold">express:view </span></span>stat &quot;/Users/sequoia/templates/restaurant_detail.jade&quot;<span class="f6"> +0ms</span>
-  <span class="f6"><span class="bold">express:view </span></span>render &quot;/Users/sequoia/templates/restaurant_detail.jade&quot;<span class="f6"> +0ms</span>
-</pre>
+* Docker & More
 
 ???
 
-Turn on debugger and see what you get!
-
-* Can also use of course app:\*,express:\* etc.
-
-&rarr; This is a node talk but as a side-note: `debug` also works in the browser!
+* You thought all you had to do was dockerize your app? Ha! Not so fast! XD
+* Still more complexity to come
 
 ---
 
-## `debug` in The Browser
+# MSV Concept: Statelessness
 
-![debug module used in the browser](img/debug_browser.gif);
+* State & persistence live outside the application
+???
+Databases, sessions, data files
+--
 
----
-
-## More Robust Logging: `winston`
-
-<http://github.com/winstonjs/winston>
+* Allows 1 instance to be scaled to 10
 
 --
-.biglist[
-* Log levels
-* Multiple Transports
-* Formatting plugins
-]
+* Allows instances to be "thrown away" or replaced
 
 ???
 
-* Sometimes you want more robust logging, log levels, external transports etc.
-* Winston!
+Let's get started with some exercises!
+
+**STOP**
+
+**NOW.SH**
 
 ---
 
-## Winston
-
-```no-highlight
-npm install winston
-```
+# Now.sh
 
 --
 
-```js
-var winston = require('winston');
-```
+* Application Hosting Platform
+--
+
+* CLI Deployment tool
+--
+
+* Reverse proxy/alias service
+--
+
+* Hosts static sites, Node apps & Docker
+--
+
+* Scaling, DNS, domain reseller, & more
+
+---
+
+# Now.sh
+???
+things to know
+--
+
+* Servers are strictly stateless
+???
+* No filesystem (besides tmp)
+* Designed for throw-away, replacible services
+* Don't try to run a DB on one of these...
+--
+
+* Only HTTP
+???
+* I tried to run a redis server on it, it doesn't expose tcp directly
+--
+
+* **Excellent DX**
+???
+* Developer Experience
+* Waaay easier to use than most cloud providers
+--
+
+* A bit opaque
+???
+* How are secrets managed?
+* What physical infra does my code run on?
+--
+
+* New
+???
+They say it's production ready but it's still an unproven service.
+
+--
+* Very easy and fun to work with!
+
+
+---
+
+class: title
+
+# LoopBack
+
+???
+
+* Tool to make it quick & easy to stand up a rest API for a database & tie DBs together
+* Automates as much as possible
+* Not 100% dashboards, not 100% code
 
 --
 
-```js
-winston.log('info', 'Hello distributed log files!');
-winston.log('debug','Here is some extra detailed info');
+* API building framework
+--
 
-//shorthands:
+* Built on Express
+--
 
-winston.info('Hello again distributed logs');
-winston.debug('Here is more info');
-```
+* Owned by IBM
+--
+
+* Integrated (sort of) with IBM Bluemix
+
+???
+* This is in process and a bit of a mess.
+
+---
+
+# LoopBack Concepts
 
 --
 
-### Console Output
-
-```no-highlight
-info: Hello distributed log files!
-info: Hello again distributed logs
-```
-
+* Models
 ???
-
-No debug! Log levels
-
----
-
-## Log Levels
-
-.small-list[
-* 0: error
-* 1: warn
-* 2: info
-* 3: verbose
-* 4: debug
-* 5: silly
-]
-
-???
-Reports current level **and below**
-
+* Data entities defined as models in code 
+* Models can interrelate
+* Automatically create API CRUD endpoints
+* **Decoupled from datasource**
 --
 
-```js
-winston.level = 'info';
-winston.level = 'debug';
-```
-
+* Datasources
+???
+* Datasource backs a model
+* Can be swapped out (sort of)
+* **Allow models from different sources to interconnect**
+* One model doesn't know or care what another model's datasource is
 --
 
-```js
-winston.level = process.env.LOGLEVEL;
-```
-
-```no-highlight
-$ LOGLEVEL=info node app.js
-```
-
-???
-* Set log level
-* set programatically
-
----
-
-## Winston "Transports"
-
-Extensions that send log messages somewhere.
-
---
-
-```js
-winston.add(winston.transports.File, { filename: 'somefile.log' });
-winston.remove(winston.transports.Console);
-```
-
-???
-Example: disabling Console & enabling File
-
---
-
-## Built in Transports
-
-* Console
-* File
-* HTTP
-
-???
-
----
-
-## Additional Winston Transports
-
-.small-list[
-* Syslog
-* Loggly
-* MongoDB
-* Redis
-* Riak
-* Elasticsearch
-* SimpleDB
-* Mail
-* Amazon Kinesis Firehose
-* Graylog2
-* and many more...
-]
-
---
-
-----
-```no-highlight
-$ npm search winston
-winston-amon         Winston transport for Amon logging                            =zoramite
-winston-amqp         An AMQP transport for winston                                 =kr1sp1n
-winston-cassandra    A Cassandra transport for winston                             =jorgebay
-winston-couchdb      a couchdb transport for winston                               =alz
-winston-express      Express middleware to let you use winston from the browser.   =regality
-winston-graylog2     A graylog2 transport for winston                              =smithclay
-winston-hbase        A HBase transport for winston                                 =ddude
-winston-loggly       A Loggly transport for winston                                =indexzero
-winston-mail         A mail transport for winston                                  =wavded
-winston-mail2        A mail transport for winston                                  =ivolo
-winston-mongodb      A MongoDB transport for winston                               =indexzero
-...
-```
-
----
-
-# Interactive Debugging
-
-???
-
-This is something common in Java, .Net, and other worlds, but unfamiliar to many JS devs. **this should change!!**
-
-I will explain how to do this and explain what an I.D. does generally, so if you're familiar with it this will be some review
-
-* inspect or alter application state
-* see the code execution path ("call stack") that lead to the currently executing line of code, and
-* inspect the application state at earlier points on that path
-
-Debuggers are useful when writing your own, original code, but they really show their value when you're working with an unfamiliar codebase. Being able to step through the code execution line by line and function by function can save hours of poring over source code, trying to step through it in your head.
-
---
-class:biglist
-* Built-in Debugger
-* Chrome Debugger
-* IDE Debugger
-
----
-
-## Node Built-in Debugger
-
-<pre class="ansi2html">
-bash-3.2$ node debug bin/www
-</pre>
-???
-* start the debugger with `node debug` scriptname
---
-<pre class="ansi2html">
-&lt; Debugger listening on [::]:5858
-connecting to 127.0.0.1:5858 ... ok
-break in bin/www:7
-  5  */
-  6 
-&gt; 7 <span class="f2">var</span>  app = require('../app');
-  8 var debug = require('debug')('test-app:server');
-  9 var http = require('http');
-</pre>
-???
-* breaks on first line
-* `n` to go to next line
---
-<pre class="ansi2html">
-n
-</pre>
---
-<pre class="ansi2html">
-break in bin/www:8
-  6
-  7 var app = require('../app');
-> 8 <span class="f2">var</span> debug = require('debug')('test-app:server');
-  9 var http = require('http');
- 10
-</pre>
-???
-let's try help
---
-<pre class="ansi2html">
-help
-</pre>
---
-<pre class="ansi2html">
-Commands: run (r), cont (c), next (n), step (s), out (o), backtrace (bt), setBreakpoint (sb), clearBreakpoint (cb),
-watch, unwatch, watchers, repl, exec, restart, kill, list, scripts, breakOnException, breakpoints, version
-</pre>
-???
-let's continue
---
-<pre class="ansi2html">
-c
-</pre>
---
-<pre class="ansi2html">
-< process 92507 listening on 3000
-debug> .exit
-</pre>
-???
-**That's enough of that**
-
-&rarr; VSCode
-
----
-
-## Visual Studio Code
-
-![vscode with debugger running](img/nodejs_debugsession.png)
-
----
-
-class: biglist
-
-## Visual Studio Code
-
-* From Microsoft
-* Written in JavaScript
-* Based on Atom editor
-* Free / Open Source
-
-???
-
-&rarr; Let's look at setting up
-
----
-
-## Setting Up The Project
-
-```no-highlight
-$ npm install express-generator -g
-$ express test-app   # create an application
-$ cd test-app        
-$ npm install
-```
-
---
-```no-highlight
-$ npm start
-```
-![Express homepage](img/express-start.png)
-
-???
-
-Start with a scaffolded express app
-
----
-
-## Launching VSCode
-
-```no-highlight
-$ code .
-```
-
-???
-
-From the app directory
-
---
-![Newly opened VSCode](img/vscode-start.png)
-
-
-
----
-class:biglist
-
-## Ways to Debug from VS Code
-
-1. Launch from shell and attach
-2. Launch from VSCode
-
-???
-
-Either way works, the first is slightly less work
-
-&rarr; We'll start with method 1
-
----
-
-
-## Creating Launch Configurations
-
-![](img/vscode-no-launch-configs.png)
-
-???
-
-1. Click the debug icon
-2. No configurations
-3. &rarr;Click little gear icon
-
----
-
-
-## Creating Launch Configurations
-![](img/vscode-generate-launchconfig.png)
-???
-Presented with choices, select Node.js
-
----
-
-
-## Creating Launch Configurations
-![](img/vscode-default-launchconfig.png)
-???
-* Now there are two default launch configurations
-
----
-
-## Default Launch Configurations
-
-```no-highlight
-test-app/.vscode/launch.json
-```
-
-```js
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Launch Program",
-      "program": "${workspaceRoot}/bin/www"
-    },
-*   {
-*     "type": "node",
-*     "request": "attach",
-*     "name": "Attach to Port",
-*     "address": "localhost",
-*     "port": 5858
-*   }
-  ]
-}
-```
-
-???
-
-* This will attach to a **running** application
-* Node.js debugger has the ability to be steered by an external application
-
----
-
-## Launch App & Attach
-
---
-
-### 1. Launch with Debug *Server* Listening
-
-<pre class="ansi2html">
-$ node --debug bin/www
-Debugger listening on [::]:5858
-process 2377 listening on 3000
-</pre>
-
-???
-Server portion is node.js, it's like the debugger from before but **listening for a controller to drive it** (set breakpoints etc.)
-
---
-
-### 2. Attach Debugger *Client* (VSCode)
-
-![](img/vscode-launch-attach.png)
-
-???
-Select "Attach to port" & click green arrow
-
----
-
-
-## Launch App & Attach
-![](img/vscode-debug-attach-started.png)
-
-???
-Now our debugger is running, note (what you'd expect in a debugger):
-
-* Control bar on top
-  * Pause execution
-  * Step Over
-  * Restart
-  * Stop button (with a plug for "detach" because it doesn't actually stop the server)
-
----
-
-
-## Set a Breakpoint
-![Setting a breakpoint on index route](img/vscode-set-breakpoint.png)
-???
-When our homepage is requested, stop code execution
-
----
-
-
-## Load Page in Browser
-![Loading the page in the browser](img/load-localhost-3000-breakpoint.png)
-
-???
-Page won't actually load, just hangs
-
----
-
-
-## Load Page in Browser
-![Hit first Breakpoint, VS Code loaded](img/vscode-hit-first-breakpoint.png)
-
-???
-
-**Execution is now paused**
-
-* Variables Pane:
-  * Local variables
-  * Request, Response, & Next objects (passed to function)
-  * types: **Request is IncomingMessage**, response is ServerResponse. Useful!
-  * **This is a big benefit of interactive debugging: discovering stuff you didn't know about your code**
-* Watch Expressions
-  * None yet
-* Call Stack
-* Breakpoints
-
-
-&rarr; Open the request object
-
----
-
-
-## Inspecting Variables
-
-![inspecting the request object](img/vscode-inspect-variables-request.png)
-
-???
-
-We opened the request object and if we scroll down
-
-&rarr; We can see...
-
----
-
-
-## Inspecting Variables
-
-![Request object: headers open](img/vscode-inspect-variables-request-2.png)
-
-???
-
-* **Incoming headers object** &rarr; Open this
-* HTTP Method
-* original URL
-* etc.
-
-Good way to discover what's available
-
-&rarr; Let's say our issue is in the rendering itself, now we can step into deps
-
----
-
-## Stepping Through Code
-
-![Click step into](img/vscode-step-into.png)
-
-???
-
-We want to debug the render function that's being called, so click **step into** 
-
-(*little arrow pointing down*)
-
-(or F11)
-
-**Step Into a function call**
-
----
-
-## Stepping Through Code
-
-![node_modules/express/lib/response.js](img/vscode-step-into-express-response.png)
-
-???
-* Stopped on line 938
-
-**We want to see what gets assigned to `app`**, so
-
-Let's let this line execute and stop on the next line
-
-&rarr; Step over
-
----
-
-## Stepping Through Code
-
-![step over button](img/vscode-step-over.png)
-
-???
-
-Click (little arc button)
-
-(Or F10)
-
----
-
-## Stepping Through Code
-
-![step over button](img/vscode-stepped-over.png)
-
-???
-* Now stopped on line 939
-* Step out works as you might expect: goes to return statement and breaks after exiting function
-
-&rarr; Let's look at editing variables in the value pane
-
----
-
-## Editing Variables
-
-???
-If in the course of your work you find yourself testing by:
-
-* change value
-* restart script
-* change value
-* restart script...
-
-You'll like this feature: edit variables in memory in a running application without restarting
-
-&rarr; We're stopped on line 929
-
---
-
-![Mover hovered over VSCode variable "options.title"](img/vscode-edit-variable-express.png)
-
-???
-
-----
-
-I've moused over the "options" object, options are the object passed to the template engine
-
-Here you can see it has a `title` property: let's change that.
-
-&rarr; Double click it
-
----
-
-
-## Editing Variables
-
-![options.title open for editing](img/vscode-editing-variable-express.png)
-
-???
-Now edit (note quotes for string)
-
-&rarr; hit **Enter**
-
----
-
-## Editing Variables
-
-![Edited title](img/vscode-edited-variable-express.png)
-
-???
-Now string is replaced
-
-&rarr; Now I'm going to click &rarr;continue
-
----
-
-## Editing Variables
-
-![Click continue](img/vscode-continue.png)
-
-???
-&rarr; Then click "continue"
-
-(Or f5)
-
-All this time our browser has been waiting!!
-
----
-
-
-## Editing Variables
-
-![BROWSER with Edited title](img/browser-with-edited-title.png)
-
-???
-
-...and our template rendered with the new value we set, from the debugger.
-
-**Bahot acha!**
-
-&rarr; let's say we want to go back to the caller, we stepped too far in
-
----
-
-
-## Call Stack
-
-![click last stack frame](img/vscode-stack-select.png)
-
-???
-
-**We're back on line 938 as we were before** but this time we're not going to hit continue
-
-Q: Can anyone see the problem in my call stack?
-
-A: **ANONYMOUS FUNCTION**
-
----
-
-
-## Call Stack
-
-![VIEWING last stack frame](img/vscode-stack-back.png)
-
-???
-
-* Now we can see the frame this function was called from
-* Note green breakpoint marker: "NOT current location"
-
-&rarr; right click
-
----
-
-
-## Call Stack
-
-![RESTART last stack frame](img/vscode-stack-reload.png)
-
-???
-
-**Restart frame**: This will rewind code execution to this frame
-
----
-
-
-## Call Stack
-
-![RESTART last stack frame](img/vscode-stack-reloaded.png)
-
-???
-
-* Now we're back in the last frame, we can change things and start execution again
-
-### talk:
-
-* Very powerful
-* Step through your application
-* Go back
-* See who called what etc.
-
-&rarr; Relaunching from shell each time is annoying (also can't catch *startup* errors)
-&rarr; Let's set this up to load from VSCode
-
----
-
-## Default Launch Configurations
-
-```no-highlight
-test-app/.vscode/launch.json
-```
-
-```js
-{
-  "version": "0.2.0",
-  "configurations": [
-*   {
-*     "type": "node",
-*     "request": "launch",
-*     "name": "Launch Program",
-*     "program": "${workspaceRoot}/bin/www"
-*   },
-    {
-      "type": "node",
-      "request": "attach",
-      "name": "Attach to Port",
-      "address": "localhost",
-      "port": 5858
-    }
-  ]
-}
-```
-
-???
-
-* Launch with node
-* "program" = startup script
-* "workspace root": VScode gives you lots of variables
-
-&rarr; Where did this configuration come from?
-
----
-
-## `package.json`
-
-```js
-{
-  "name": "test-app",
-  "version": "0.0.0",
-  "private": true,
-* "scripts": {
-*   "start": "node ./bin/www"
-* },
-  "dependencies": {
-    "body-parser": "~1.16.0",
-    "cookie-parser": "~1.4.3",
-    "debug": "~2.6.0",
-    "express": "~4.14.1",
-    "jade": "~1.11.0",
-    "morgan": "~1.7.0",
-    "serve-favicon": "~2.3.2",
-    "winston": "^2.3.1"
-  }
-}
-```
-
-???
-
-VSCode will look for startup configurations in your package.json and automatically set them as launch configs
-
-Here we have `npm start` but it will also pickup `package.main` if one exists
-
-&rarr; Kill our running script then launch from VSCode
-
----
-
-
-## Launch from VSCode
-![mouse over "launch" button](img/vscode-debug-launch.png)
-
-???
-Going to click the little green "launch" button
-
-(Or f5)
-
-* Now we can launch straight from VSCode
-
-&rarr; I added a breakpoint
-
----
-
-## Launch from VSCode
-![break on line 1](img/vscode-launch-break-line-one.png)
-
-???
-
-* Also you can (re)launch with F5 making it easy to change & relaunch
-* Note that the debug output (console) is now inside vscode
-
-&rarr; We used default launch configs but they can get more complex:
-
----
-
-## More Launch Configurations
-
-```no-highlight
-$ NODE_ENV=development node ./node_modules/.bin/node-lambda run
-```
-
---
-
-.small-list[
-* Script: `./node_modules/.bin/node-lambda`
-* Argument: `run`
-* Environment variables: `NODE_ENV=development`
-]
-
-???
-Lets say I have a command like this:
-
-* run `node-lambda` (from node modules)
-* with the argument `run`
-* with environment variable `NODE_ENV=development`
-
---
-
-```js
-{
-    "version": "0.3.0",
-    "configurations": [{
-      "name": "Launch",
-      "type": "node",
-      "request": "launch",
-*     "program": "${workspaceRoot}/node_modules/.bin/node-lambda",
-*     "args": ["run"],
-*     "cwd": "${workspaceRoot}",
-*     "env": {
-*       "NODE_ENV": "development"
-*     },
-    }]
-}
-```
-
-???
-
-Starting from a utility script in node_modules
-
-* CWD is also important
-
-&rarr; with that set up Let's **revisit breakpoints** and go over the other debug panes.
-
----
-
-## Break on Exceptions
-
-???
-
-* Checked by default
-
---
-
-```js
-var express = require('express');
-var router = express.Router();
-
-*router.use(express.static());
-
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
-});
-
-module.exports = router;
-```
-
-???
-
-calling a function to construct an express middleware object.
-
-&rarr; Run our script and...
-
----
-
-## Break on Exceptions
-
-![](img/vscode-root-path-required.png)
-
-???
-
-Uh-oh! there's an error: "root path required"
-
-Go to my call stack and &rarr; Click on the frame that called this one
-
----
-
-## Break on Exceptions
-
-![](img/vscode-root-path-up-stack.png)
-
-???
-
-Also "Break on ALL Exceptions" (even handled ones) &rarr; Be prepared for a lot of noise
-
----
-
-## Conditional Breakpoints
-
-![](img/vscode-conditional-breakpoints.png)
-
-???
-* Enter a condition
-  * only admin
-  * stop when some program condition is true &rarr; useful for when you have a hard to reproduce case
-* hit count: Not so useful here but useful if something is getting called 2x and you only want it called 1x (where is second call coming from?)
-
-More breakpoints I'm not going over!
-
-* Column (for minified code)
-* Function name (break when fn by that name is executed)
-
----
-
-## Watch Expressions
-
-![watch expressions](img/vscode-watch-expressions.png);
-
-???
-Any time program is paused, it will show the current value **in the current scope**
-
-* process.pid
-* req.query.user
-
-Useful to track change of something through steps, see where it changed
-
----
-
-## Debug Console
-
-![watch expressions](img/vscode-debug-console.png);
-
-???
-
-* Execute code in the current context (response.setHeader etc.)
-  * Good for things you have to transform with function calls
-* Also a good way to explore in-memory objects
-
-&rarr; Enough VS Code, let's look at debugging with the chrome debugger.
-
----
-# Node Inspector Installation
-
-???
-
-Node-inspector is the name of the tool that links chrome devtools to node.js
-
---
-
-<pre class="ansi2html">
-$ npm install -g node-inspector
-$ node-inspect my-script.js
-</pre>
-
----
-# ~~Node Inspector Installation~~
-
-<pre class="ansi2html">
-<strike>$ npm install -g node-inspector</strike>
-<strike>$ node-inspect my-script.js</strike>
-</pre>
-
-## ✨ Bundled with Node (6.3+)✨
-
-<pre class="ansi2html">
-$ node --inspect my-script
-</pre>
-
-???
-
-Before we jump in with chrome, let's &rarr; Quickly review the debug startup methods we've discussed so far
-
----
-
-## Debug *in Terminal*
-
-<pre class="ansi2html">
-$ node <span class="b4">debug</span> my-app.js
-< Debugger listening on [::]:5858
-connecting to 127.0.0.1:5858 ... ok
-break in my-app:7
-...
-</pre>
-
---
-
-## Listen for *VSCode* Debugger
-
-<pre class="ansi2html">
-$ node <span class="b4">--debug</span> my-app.js
-Debugger listening on [::]:5858
-[[attach vs-code]]
-</pre>
-
---
-
-## Listen for *Chrome* Debugger
-
-<pre class="ansi2html">
-$ node <span class="b4">--inspect</span> my-app.js
-Debugger listening on port 9229.
-Warning: This is an experimental feature and could change at any time.
-To start debugging, open the following URL in Chrome:
-    chrome-devtools://devtools/remote/serve_file/@521e5b7e2b7cc66b4006a8a54cb9c4e57494a5ef/inspector.html?experiments=true&v8only=true&ws=localhost:9229/node
-</pre>
-
-???
-
-Let's jump into the chrome debugger
-
----
-
-# Chrome Debugger
-
-<pre class="ansi2html">
-$ node <span class="b4">--inspect</span> my-app.js
-Debugger listening on port 9229.
-Warning: This is an experimental feature and could change at any time.
-To start debugging, open the following URL in Chrome:
-    chrome-devtools://devtools/remote/serve_file/@521e5b7e2b7cc66b4006a8a54cb9c4e57494a5ef/inspector.html?experiments=true&v8only=true&ws=localhost:9229/node
-</pre>
-
-???
-
-Point a chrome browser to that URL....
-
----
-
-# Chrome Debugger
-
-![chrome debugger](img/chrome-debugger.png)
-
-???
-
-Here it is! Looks fairly similar to VSCode debugger
-
-&rarr; Why would you use this instead?
-
----
-
-## Advantages (over VSCode) ✅
-
-* CPU profiling
-* Heap snapshots & analysis 
-* Don't need to use VS Code
-
---
-
-## Disadvantages ❌
-
-* Outside your IDE
-* Some non-node related cruft
-
---
-
-## ✅✅✅ Use both!
-
-???
-
-They do different things
-
-Use VS-Code for dev, chrome when you need more advanced debugging
-
-breakpoints, watch expressions etc. are about the same (vscode has a slight edge in places)
-
-&rarr; **Profiling** is what chrome inspector is good for
-
----
-
-## Chrome: Profiling
-
-![chrome profiler overview](img/chrome-profiles-overview.png)
-
-???
-* In the profiles tab
-
-### Tools
-* Record JavaScript CPU Profile - see where execution time is spent, CPU spikes etc.
-* Heap snapshot: show what's using memory
-* and more!
-
-&rarr; Start with taking a CPU profile
-&rarr; Run some requests against our simple Node.js server with three routes: fibonacci, index, and one that loops and generates arrays of numbers
-
----
-
-## Three Routes:
-
-```js
-*router.get('/', function handleIndex(req, res, next) {
-  res.render('index', { title: 'Express' });
-});
-
-*router.get('/fibonacci/:iters', function handleFibonacci(req, res, next) {
-    var num = fibonacci(Number(req.params.iters) || 10);
-    res.render('fib', { number: num, /*...*/} )
-});
-
-*router.get('/loop/:iters', function loopHandler(req, res, next){
-  /* generate a big 2D array of numbers */
-  res.send(ray.map(nums => nums.join(', ')).join('<br>'));
-});
-```
-
-???
-
-Important bit now is the function names:
-
-* handleIndex
-* handleFibonacci
-* loopHandler
-
-&rarr; Run some requests against our simple Node.js server with three routes: fibonacci, index, and one that loops and generates arrays of numbers
-
----
-
-## CPU Profiling: Flame Charts
-
-![normal request](img/flame-normal-request.png)
-
-???
-
-Zoomed in on a couple requests here
-
-What are we looking at? This is about 10 seconds of running Express app
-
-* Each colored bar is a function call or frame
-* Lower frames are callers, call next one down
-* Anonymous function calls onstat which calls next etc.
-* Height is call depth
-* Width is CPU time
-* Colored by file
-
-Note pink says "handleIndex" that's our handler function
-
-&rarr; hover over it
-
----
-
-## CPU Profiling: Flame Charts
-
-![normal request](img/flame-normal-request-hover.png)
-
-???
-
-Takes about 6 ms
-
----
-
-## High CPU Functions
-
-![really wide flame request](img/flame-wide-loop.png)
-
-???
-
-Really wide bars on our handleLoop!
-
----
-
-## High CPU Functions
-
-![wide flame request hovered: 61ms on one call](img/flame-wide-loop-hover.png)
-
-???
-
-Hover: 61ms 
-
-&rarr; Click to jump to the code
-
----
-
-## High CPU Functions
-
-![](img/flame-clicked-to-loop.png)
-
-???
-
-&larr; Jumped right to the line of code, with that line highlighted!
-
-&rarr; Another way to look is as a chart
-
----
-
-## CPU Call Chart
-
-![](img/cpu-chart-heavy-loop.png)
-
-???
-
-Here you can see **by function** how much time was spent
-
-&rarr; In our case we can see it's our loop handler function
-
----
-
-## CPU Call Chart
-
-![](img/cpu-chart-heavy-loop-hovered.png)
-
-???
-
-* This is another way of identifying issues
-* Good if there's one function that's called from *many places* but **takes a lot of time in total**
-
-&rarr; Wide bar in our flame graph is lots of CPU, deep is.....
-
----
-
-## Flame Charts: Recursion
-
-![](img/flame-fibonacci.png)
-
-???
-
-&larr; ... lots of recursion
-
-* Here our fibonacci function is very deep call
-
-&rarr; last thing: heap snapshots
-
----
-
-## Heap Snapshots
-
-???
-
-Capture a list of objects in memory and how much they use
-
-Here's our new route:
-
---
-
-```js
-var sockets = [];
-
-function CreateNewFileReader(){
-* sockets.push(fs.createReadStream('/tmp/letter.txt'));
-}
-
-router.get('/leak', function(req, res){
-* CreateNewFileReader();
-  res.send('ok');
-});
-```
-
-???
-
-Each call to `/leak`, call a function that creates a new ReadableStream and puts it in an array
-
-Specifically, it opens a file read stream for `/tmp/letter.txt/`
-
-&rarr; Start our program and take a heap snapshot
-
----
-
-## Snapshot
-
-![](img/heap-take-snapshot.png)
-
-???
-&rarr; looks like this
-
----
-
-## Snapshot: Start
-
-![heap snapshot](img/heap-snapshot-1.png)
-
-???
-
-Won't explain this too much... but nothing out of the ordinary
-
-* Sorting by retained size
-* More memory is held by strings than anything else
-
-**Now hit our `/leak/` route 6,000 times**
-
-&rarr; Take another snapshot
-
----
-
-## Snapshot: Later on...
-
-![snapshot after calling leak 6k times](img/heap-snapshot-2.png)
-
-???
-
-97% memory is in ArrayBufferData!! That doesn't look right.
-
-&rarr; Look at comparison from last snapshot, compare the two
-
----
-
-## Snapshot: Comparison
-
-![](img/heap-comparison-sorted-by-alloc-size.png)
-
-???
-
-Note the **Delta** of those object counts-- we can see that a lot were created since last snapshot (6001)
-
-**Comparing across snapshots from different times to see what's been created or what's retained across snapshots one of the best ways to get started with memory analysis**
-
-Note also Alloc size + Size delta: these things are using a lot of memory!
-
-&rarr; Let's click to open this listing of objects
-
----
-
-## Snapshot: Comparison
-
-![](img/heap-comparison-opened-system-jsarraybufferdata-tree.png)
-
-???
-
-What are these objects "jsarraybufferdata"?
-
-We select one and can inspect its **retainers** at the bottom, the retainer is the thing that keeps it in memory, keeps it from being garbage collected.
-
-Nothing is obvious right away, but if we hover over some of the objects we can see their properties &rarr;
-
----
-
-## Snapshot
-
-![](img/heap-comparison-hovered-_readableState.png)
-
+* "Declarative APIs"
 ???
-
-Aha! We can see this readable stream has a "path" property that points to letter.txt
+* Don't write routes, just describe what your data looks like, who can access it etc.
+* Framework writes routes for you
 
-**This gives us a good clue for where to start looking in our codebase**
-
-&rarr; That's all. I hope you enjoyed the talk
-
 ---
-.last-page-floater[![Great Indian Developer Summit](img/GIDSLogo.jpg)]
-
-# Thank you!!
-
-<hr style="clear:both" />
-
-## Sequoia McDowell
-
-.small-list[
-* 🌐  http://sequoia.makes.software
-* 🦆  @_sequoia
-* 📧  sequoia.mcdowell@gmail.com
-* http://sequoia.makes.software/debugging-nodejs-talk/
-]
-
-???
-
-* you can find the slides below
-* Thanks to GIDS
-* Thanks for coming!
 
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js" type="text/javascript">
     </script>
     <script type="text/javascript">
       var slideshow = remark.create({
-        highlightLines: true
+        highlightLines: true,
+        ratio: '16:9'
       });
       document.body.addEventListener('keydown', function(event){
         if(event.code === 'Escape' || event.code === 'F5'){

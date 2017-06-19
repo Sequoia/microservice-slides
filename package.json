@@ -1,5 +1,5 @@
 {
-  "name": "microservices-slides",
+  "name": "microservice-slides",
   "version": "1.0.0",
   "description": "",
   "main": "buildHTML.js",
@@ -20,13 +20,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Sequoia/microservices-slides.git"
+    "url": "git+https://github.com/Sequoia/microservice-slides.git"
   },
   "keywords": [],
   "author": "Sequoia McDowell <sequoia.mcdowell@gmail.com> (https://sequoia.makes.software/)",
   "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/Sequoia/microservices-slides/issues"
+    "url": "https://github.com/Sequoia/microservice-slides/issues"
   },
-  "homepage": "https://github.com/Sequoia/microservices-slides#readme"
+  "homepage": "https://github.com/Sequoia/microsernvice-slides#readme"
 }
