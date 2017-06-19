@@ -1,0 +1,107 @@
+/* Small list is a style for small lists:
+.small-list[
+  * foo
+  * bar
+]
+
+.title is a class for title slide
+
+class: title
+*/
+
+/* Layout defaults */
+
+.remark-slide-content{
+  /*vertical-align: middle;*/
+  padding: 1em 3em; /* reduce cuz I'm increasing text size*/
+  /*background-image: url('../img/GIDSLogo.jpg');*/
+}
+
+/* Text */
+body .remark-slide-content{
+  font-family: 'Open Sans', sans-serif;
+  font-size: 20pt;
+}
+
+/* Headers */
+
+.remark-slide-content h3{
+  margin-top:.5em;
+  margin-bottom:.5em;
+}
+
+.remark-slide-content h3:first-child{
+  margin:inherit;
+}
+
+/*Title screen*/
+
+.title h1{
+  border-bottom: solid 5px;
+}
+
+/* slide styles */
+
+.remark-slide-content ul, .remark-slide-content ol{
+  list-style-type:circle;
+  font-size:1.8em;
+  line-height:1.5em;
+  margin-bottom:.5em;
+  margin-top:.5em;
+}
+
+ul ul, ul ol, ol ol, ol ul{
+  font-size:inherit;
+}
+
+.small-list ul, .small-list ol{
+  font-size:1em;
+}
+
+.full-width{
+  width:100%; 
+}
+
+.todo {
+  background: lightcoral;
+  font-style: italic;
+}
+
+.code{
+  background:#F0F0F0;
+  margin:0;
+  padding:1em;
+  /*vertical-align: middle;*/
+}
+
+h1,
+h2,
+h3
+{
+  margin-top:0;
+  margin-bottom:.2em;
+}
+
+/* matching `no-highlight` styles to other styles */
+
+pre>code.no-highlight{
+    display:block;
+    padding: .5em;
+    background: #F0F0F0;
+}
+
+/* image */
+img{
+  width:100%;
+}
+
+.last-page-floater{
+  float:right;
+  width:55%;
+}
+
+/* pushing two pres together across a transition */
+pre.ansi2html+pre.ansi2html{
+  margin-top:-2em;
+  overflow: hidden;
+}
