@@ -23,6 +23,17 @@ class: title
   /*vertical-align:inherit;*/
 }
 
+.remark-slide-content.img{
+  padding-top:0;
+  /*vertical-align:inherit;*/
+}
+
+.remark-slide-content.img p{
+  padding:0;
+  margin-top:0;
+  /*vertical-align:inherit;*/
+}
+
 /* Text */
 body .remark-slide-content{
   font-family: 'Open Sans', sans-serif;
@@ -54,11 +65,19 @@ body .remark-slide-content{
 /* slide styles */
 
 .remark-slide-content ul, .remark-slide-content ol{
-  list-style-type:circle;
   font-size:1.8em;
   line-height:1.5em;
   margin-bottom:.5em;
   margin-top:.5em;
+}
+
+
+.remark-slide-content ul{
+  list-style-type:circle;
+}
+
+.remark-slide-content ol{
+  list-style-type: default;
 }
 
 ul ul, ul ol, ol ol, ol ul{

@@ -803,12 +803,364 @@ class: title
 
 * Wire together all necessary resources, permissions, etc.
 
+???
+
+**STOP**
+
+**Serverless hello world**
+
+https://serverless.com/framework/docs/providers/aws/examples/hello-world/node/
+
+---
+
+# Setting up Serverless
+
+1.  Create a an IAM user
+2.  Copy key & secret
+3.  Set credentials in shell
+
+---
+class:img
+
+<https://console.aws.amazon.com/iam/home>
+
+![](img/IAM.png)
+
+???
+
+1. Dashboard
+2. IAM
+3. Click users
+
+---
+class:img
+
+![](img/IAM_Users.png)
+
+???
+
+1. Add user
+
+---
+class:img
+
+![](img/IAM_name_access.png)
+
+???
+
+1. Name: serverless admin
+2. Access Type: Programmatic (api, not a user/pass login)
+
+---
+class:img
+
+![](img/IAM_attach_policy.png)
+
+???
+
+1. Attach policies directly
+2. Administrator access
+
+
+---
+class:img
+
+![](img/IAM_User_key.png)
+
+???
+
+1. Copy keys
+
+---
+
+# Configure Serverless to Use Keys
+
+```no-highlight
+$ sls configure credentials --provider aws --key KEY --secret SECRET
+```
+
+--
+
+```no-highlight
+Serverless: Setting up AWS...
+Serverless: Saving your AWS profile in "~/.aws/credentials"...
+Serverless: Failed! ~/.aws/credentials exists and already has a "default" profile.
+```
+
+???
+
+If you see this, you already have a default AWS user
+
+--
+
+```no-highlight
+$ cat ~/.aws/credentials
+
+[default]
+aws_access_key_id=AKIAITI...
+aws_secret_access_key=D9T...
+```
+
+???
+
+* Edit file to change name of default profile to something else
+* (or append `--profile serverless` but you'll need to recall that later)
+
+---
+
+# Serverless Hello World
+
+```no-highlight
+$ sls create --template aws-nodejs --path myService
+$ cd myService
+$ serverless deploy
+$ serverless invoke --function hello
+```
+
+???
+
+Other useful commands:
+
+--
+
+`$ sls deploy list functions`
+
+--
+
+`$ sls info`
+
+--
+
+No http endpoint!
+
+---
+
+# Add an Endpoint
+
+```yaml
+functions:
+    hello:
+    handler: handler.hello
+    events:
+      - http:
+          path: /hello
+          method: get
+```
+
+---
+
+# Deploy again
+
+```no-highlight
+$ sls deploy
+
+Serverless: Packaging service...
+...
+Serverless: Checking Stack update progress...
+........................
+Serverless: Stack update finished...
+Service Information
+service: myService
+stage: dev
+region: us-east-1
+api keys:
+  None
+endpoints:
+  GET - https://jyi4ni4p92.execute-api.us-east-1.amazonaws.com/dev/hello
+functions:
+  hello: myService-dev-hello
+```
+
+--
+
+`$ curl https://jyi4ni4p92.execute-api.us-east-1.amazonaws.com/dev/hello`
+
+???
+
+* Look at lambdas
+* Look at API Gateway
+
+---
+
+# Lambda Dashboard
+
+![](img/Lambda_Dashboard.png)
+
+---
+
+# API Gateway Dashboard
+
+![](img/APIG_Dashboard.png)
+
+---
+
+# Tear down
+
+`$ sls remove`
+
+???
+
+&rarr; Some other things SLS can do
+
+---
+
+# Create Resources
+
+```yaml
+resources:
+  Resources:
+    NewResource:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: my-new-bucket
+```
+
+---
+
+# Grant Permissions to Resources
+
+```yaml
+provider:
+  iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - s3:GetObject
+    Resource: "arn:aws:s3:::books-bucket/*"
+```
+
+???
+
+And more!
+
+---
+
+# Encryption keys
+
+* KMS
+* Create keys
+* Grant resources access to those keys
+* Keep data encrypted locally
+
+---
+
+class:img
+
+![](img/IAM_KMS_start.png)
+
+???
+
+1. IAM dashboard
+
+---
+
+class:img
+
+![](img/IAM_KMS_region.png)
+
+???
+
+Select same region as your sls function!!
+
+---
+
+class:img
+
+![](img/IAM_KMS_alias.png)
+
+
+---
+
+class:img
+
+![](img/IAM_KMS_tags.png)
+
+???
+
+tag so you can find it later
+
+---
+
+class:img
+
+![](img/IAM_KMS_admin.png)
+
+???
+
+Might not be necessary...
+
+---
+
+class:img
+
+![](img/IAM_KMS_use.png)
+
+---
+
+class:img
+
+![](img/IAM_KMS_get_key.png)
+
+???
+
+Needed for SLS
+
+---
+
+# Encrypt some Secrets
+
+`$ npm i -S serverless-kms-secrets`
+
+--
+
+```yaml
+plugins:
+  - serverless-kms-secrets
+
+# Provide access to the secrets file to sls config
+#   key ARN needed to grant to functions
+#   values needed to pass to functions to decrypt
+custom:
+  kmsSecrets: ${file(kms-secrets.${opt:stage, self:provider.stage}.${opt:region, self:provider.region}.yml)}
+```
+
+???
+add plugin to SLS config
+
+--
+
+```no-highlight
+$ sls encrypt -n JWT_SECRET \
+ -v "I've got a lovely bunch of coconuts" \
+ -k 6681f426-81eb-49eb-aae5-b785d6d87870
+```
+
+---
+
+# Encrypted Secrets
+
+```no-highlight
+$ cat kms-secrets.<STAGE>.<REGION>.yml
+secrets:
+    JWT_SECRET: AQICAHhLbOgGFtsGLmYKC0Ft/zCDCQ4RwsYjTBbLXkK1a7th2gH+UAfXAP0ZQ+0sBu3KpEdGAAAAgTB/BgkqhkiG9w0BBwagcjBwAgEAMGsGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMXCzK378fl4qjLk+JAgEQgD4TwdWRcTF3oza8eI35GMJDsZ+/ciV6RHHyWoniKvUkYFWj81CyTqxt7Pirj2/lblXg4xvzvy8NVmpmvd6Zrg==
+keyArn: 'arn:aws:kms:<REGION>:700002748008:key/6681f426-81eb-49eb-aae5-b785d6d87870'
+```
+
+???
+
+* Safe to check in
+* Make sure regions match!!
+
+---
+
+
+
     </textarea>
     <script src="/lib/remark.min.js" type="text/javascript">
     </script>
     <script type="text/javascript">
       var slideshow = remark.create({
-        highlightLines: true
+        highlightLines: true,
+        ratio: '16:9'
       });
       document.body.addEventListener('keydown', function(event){
         if(event.code === 'Escape' || event.code === 'F5'){
