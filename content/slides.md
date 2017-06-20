@@ -1005,6 +1005,123 @@ provider:
 
 And more!
 
+**STOP**
+**SLS LAMBDA STUFF**
+
+---
+
+# JSONWebTokens
+
+* Based on Web Standard (RFC7519)
+* Used to securely communicate JSON objects
+* Consists of header, payload, and signature
+* Self-contained
+* "More flexibility" than (browser-only) cookies
+* https://tools.ietf.org/html/rfc7519
+
+???
+
+Standard is pretty accessible
+
+---
+
+# More on JWTs
+
+* JWTs are not signed/encrypted themselves
+  * JSON Web Signatures (JWS) used for signing
+  * JSON Web Encryption (JWE) used for encrypting
+* Can be used with public/private keypairs also
+* Can also be used for parallel/multiple signers (see JWS-JS)
+
+???
+
+* We're using JWTs with JWS
+
+---
+
+> It is important to understand that the purpose of using JWT is NOT to hide or obscure data in any way. The reason why JWT are used is to prove that the sent data was actually created by an authentic source.
+
+\- [@mikey_s_e](https://medium.com/vandium-software/5-easy-steps-to-understanding-json-web-tokens-jwt-1164c0adfcec)
+
+---
+
+# Parts of a JWT
+
+* Header
+* Payload
+* Signature
+
+--
+
+`header.payload.signature`
+
+---
+
+```no-highlight
+eyJhbGciOiJIUzI1NiJ9
+.eyJ1c2VyIjp7ImlkIjoiOTM0ODc1bGFrc2RqZiIsIm5hbWUiOiJTZXF1b2lhIiwicm9sZSI6InNlcmYifSwicGVybWlzc2lvbnMiOnsiYm9va3MiOlsiYWRkIiwiZWRpdCIsImRlbGV0ZSIsInZpZXciXSwidXNlcnMiOlsidmlldyJdfX0
+.mgdWdWNPgD5bm1fiC99vlNc65KmsH5kLkEuIJhXIf0U
+```
+
+--
+
+```no-highlight
+base64(header)
+.base64(payload)
+.HMACSHA256( base64(header) . base64(footer) , secret
+```
+
+---
+
+# Header ("JOSE" header)
+
+*JOSE = JavaScript Object Signing & Encryption*
+
+
+* (Usually) two keys:
+* `typ`: Type of claim (JWT, JWA, JWE)
+* `alg`
+
+--
+
+```js
+{
+  "typ" : "JWT",
+  "alg": "HS256"
+}
+```
+
+---
+
+# Payload
+
+.small-list[
+* **public claims**: user-defined attributes
+
+* **reserved claims**: defined by standard
+  * `iss`: issuer
+  * `sub`: subject
+  * `aud`: audience
+  * `exp`: expiration time
+  * `nbf`: not before
+  * `iat`: Issued at
+]
+
+---
+
+# Arguments against using JWTs to manage sessions
+
+* http://cryto.net/~joepie91/blog/2016/06/13/stop-using-jwt-for-sessions/
+* http://cryto.net/~joepie91/blog/2016/06/19/stop-using-jwt-for-sessions-part-2-why-your-solution-doesnt-work/ 
+
+???
+
+**SHOW JWT DEMO**
+
+**STOP**
+
+**DO SLS Exercises**
+
 ---
 
 # Encryption keys
