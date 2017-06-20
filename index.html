@@ -1150,7 +1150,292 @@ keyArn: 'arn:aws:kms:<REGION>:700002748008:key/6681f426-81eb-49eb-aae5-b785d6d87
 
 ---
 
+class: title
 
+# Docker
+
+--
+
+* "Container Engine"
+???
+* Application bundles with all binaries & FS resources needed to run
+* Typically just one service (not e.g. webserver + redis)
+* Contrast with VMs
+* Share kernel
+--
+
+* "Layers"
+???
+* Each setup command creates a new layer
+* Container can be used as startpoint (layer) for another container
+--
+
+* Shared Kernel
+???
+* Fast to start
+* More shared resources
+https://www.docker.com/what-container
+
+---
+
+# Docker Development Workflow
+
+--
+
+1. Create dockerfile
+???
+* Base it on another docker container like linux or node or java or redis
+--
+
+1. Add commands to configure your application
+???
+* Copy files
+* Run install commands
+--
+
+1. Add command to *start* your application
+--
+
+1. `docker build`
+???
+* Run all the commands to build an "image" artifact in local docker machine
+--
+
+1. `docker push`
+???
+* push the image to Docker hug or another registry
+
+---
+
+# Advantages of Containers
+
+--
+
+* Identical execution environments
+--
+
+* Lighter weight than VMs
+--
+
+* Fast to set up and tear down
+--
+
+* Run the same on dev & prod
+--
+
+???
+
+**STOP**
+
+**Dockerize demo**
+
+---
+
+class: title
+
+# Kubernetes
+
+???
+
+* Docker doesn't describe *how* containers should run
+* Container orchestration 
+* Declarative
+* Describe your services and how many should run etc.
+* Host on GKE or elsewhere
+
+---
+
+# Kubernetes Concepts
+
+--
+
+* Nodes
+???
+* Node: VMs that run your kubernetes cluster
+--
+
+* Cluster
+???
+* Cluster: A group of Kubernetes nodes
+--
+
+* Pods
+???
+* Pods: What a container runs in (deployed to a cluster)
+--
+
+* Deployment
+???
+* Deployment: Describes how pods should be scheduled, scales them up and down
+--
+
+* Services
+???
+* Describe how pods should be exposed
+
+---
+
+# Pod
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    env: test
+    role: loadbalancer
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+```
+
+???
+* labels
+* image
+* Normally don't create these directly
+
+---
+
+# Deployment
+
+```yaml
+apiVersion: v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 3
+  template:
+    metadata:
+    name: nginx
+    labels:
+        env: test
+        role: loadbalancer
+    spec:
+    containers:
+    - name: nginx
+        image: nginx
+```
+
+???
+* Create these to manage your deployment
+* This creates a ReplicaSet which creates your pods
+* **Work at the highest level of abstraction**
+
+---
+
+# Service: `ClusterIP`
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp
+  labels:
+    name: webapp
+    stack: books
+spec:
+  selector:
+    name: webapp
+  ports:
+   - port: 80
+     targetPort: 80
+     protocol: TCP
+```
+
+???
+* Default type: ClusterIP
+* No external networking
+* Name gets used by kube-dns for internal routing
+
+---
+
+# Service: `NodePort`
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: reverseproxy
+  labels:
+    name: reverseproxy
+    stack: books
+spec:
+  type: NodePort
+  selector:
+    name: reverseproxy
+  ports:
+   - port: 80
+     targetPort: 8080
+     protocol: TCP
+```
+
+???
+* Use this to expose a port on your node, externally
+
+---
+
+# Service: `LoadBalancer`
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: reverseproxy
+  labels:
+    name: reverseproxy
+    stack: books
+spec:
+  type: LoadBalancer
+  selector:
+    name: reverseproxy
+  ports:
+   - port: 80
+     targetPort: 8080
+     protocol: TCP
+```
+
+???
+* Use these to expose on cloud provider like GKE
+
+---
+
+# Labels and Selectors
+
+--
+
+## Service has **selectors**
+
+```yaml
+...
+spec:
+  type: LoadBalancer
+  selector:
+    name: reverseproxy
+...
+```
+
+--
+
+## Deployment has **labels**
+
+```yaml
+...
+spec:
+  template:
+    metadata:
+      name: reverseproxy
+      labels: # arbitrary key/value pairs (metadata)
+        name: reverseproxy
+        stack: books
+        role: external-facing
+...
+```
+
+???
+* Selectors find resources with matching labels
 
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js" type="text/javascript">
